@@ -39,7 +39,7 @@ Run the script as follows, taking Commonwealth-Bank as an example. You can pass 
 ### Example 1
 Suppose you want to get the top 1,000 most popular reviews for Commonwealth-Bank. Run the command as follows:
 
-`python main.py --headless --url "python main.py --headless --url "https://au.indeed.com/cmp/Commonwealth-Bank/" --limit 1000 -f commonwealthbank_reviews.csv" --limit 1000 -f wells_fargo_reviews.csv`
+`python main.py --headless --url "python main.py --headless --url "https://au.indeed.com/cmp/Commonwealth-Bank/" --limit 1000 -f commonwealthbank_reviews.csv"`
 
 **Note**: To be safe, always surround the URL with quotes. This only matters in the presence of a query string.
 
