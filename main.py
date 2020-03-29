@@ -67,14 +67,13 @@ logging.getLogger('selenium').setLevel(logging.CRITICAL)
 def scrape(field, review, author):
 
     def scrape_date(review):
-        return review.find_element_by_class_name('cmp-review-date-created').text.strip("'")
+        return review.find_element_by_xpath(".//span[@class='cmp-ReviewAuthor']").text.split("-")[-1]
 
     def scrape_emp_title(review):
-        return review.find_element_by_class_name('cmp-reviewer').text.strip("'")
-
+        return review.find_element_by_xpath(".//span[@class='cmp-ReviewAuthor']/meta[@itemprop='name']").get_attribute('content')
     def scrape_location(review):
         try:
-            res = review.find_element_by_class_name('cmp-reviewer-job-location').text.strip("'")
+            res = review.find_element_by_xpath(".//span[@class='cmp-ReviewAuthor']").text.split("-")[1]
         except Exception:
             res = np.nan
     
@@ -82,19 +81,19 @@ def scrape(field, review, author):
 
 
     def scrape_rev_title(review):
-        return review.find_element_by_class_name('cmp-review-title').text.strip('"')
+        return review.find_element_by_class_name('cmp-Review-title').text.strip('"')
 
     def scrape_reviews(review):
         try:
-            res = review.find_element_by_class_name(
-                'cmp-review-text').text.strip("'")
+            res = review.find_element_by_xpath(".//div[@class='cmp-Review-text']/span/span[1]/span").text
         except Exception:
             res = np.nan
         return res
 
     def scrape_overall_rating(review):
         try:
-            res = review.find_element_by_class_name('cmp-ratingNumber').text
+            res = review.find_element_by_class_name(
+                'cmp-ReviewRating-text').text
         except Exception:
             res = np.nan
         return res
@@ -102,13 +101,14 @@ def scrape(field, review, author):
     def _scrape_subrating(i):
         try:
             ratings = review.find_element_by_class_name(
-                'cmp-rating-expandable')
+                'cmp-Review-rating')
             subratings = ratings.find_element_by_class_name(
-                'cmp-ratings-popup').find_element_by_tag_name('tbody')
-            this_one = subratings.find_elements_by_tag_name('tr')[i]
-            x = this_one.find_element_by_class_name(
-                'cmp-Rating-on').get_attribute('style')
-            res = (int(x[x.find(":")+1:x.find("%")]))*0.05
+                'cmp-ReviewRating').find_element_by_class_name('cmp-ReviewRating-popup')
+            this_one = subratings.find_elements_by_class_name(
+                'cmp-SubRating')[i]
+            x = this_one.find_element_by_class_name('cmp-RatingStars-starsUnfilled').find_element_by_class_name(
+                'cmp-RatingStars-starsFilled').get_attribute('style')
+            res = (int(x[x.find(":")+1:x.find("p")]))*0.05
         except Exception:
             res = np.nan
         return res
@@ -157,7 +157,7 @@ def extract_from_page():
             return False
 
     def extract_review(review):
-        author = review.find_element_by_class_name('cmp-reviewer-job-title')
+        author = review.find_element_by_class_name('cmp-Review-author')
         res = {}
         # import pdb;pdb.set_trace()
         for field in SCHEMA:
@@ -170,7 +170,7 @@ def extract_from_page():
 
     res = pd.DataFrame([], columns=SCHEMA)
 
-    reviews = browser.find_elements_by_class_name('cmp-review-container')
+    reviews = browser.find_elements_by_class_name('cmp-Review-container')
 
     if(len(reviews) == 0):
         logger.info('No more Review!')
@@ -200,15 +200,14 @@ def extract_from_page():
 def more_pages():
     try:
         browser.find_element_by_class_name(
-            'cmp-Pagination-link.cmp-Pagination-link--nav')
+            'cmp-Pagination-edgeButton')
         return True
     except selenium.common.exceptions.NoSuchElementException:
         return False
 
 def go_to_next_page():
     logger.info(f'Going to page {page[0] + 1}')
-    next_ = browser.find_element_by_class_name(
-        'cmp-Pagination-link.cmp-Pagination-link--nav')
+    next_ = browser.find_element_by_xpath(".//a[@data-tn-element='next-page']")
     browser.get(next_.get_attribute('href'))
     time.sleep(1)
     page[0] = page[0] + 1
@@ -228,7 +227,7 @@ def navigate_to_reviews():
         return False
 
     reviews_cell = browser.find_element_by_xpath(
-        '//*[@id="cmp-skip-header-desktop"]/ul/li[3]/a')
+        '/html/body/div[2]/div/div[1]/div[1]/header/div[2]/div[3]/div/div/div/div[3]/nav/div/ul/li[3]/a')
     reviews_path = reviews_cell.get_attribute('href')
     browser.get(reviews_path)
     time.sleep(1)
@@ -247,9 +246,8 @@ def get_browser():
 
 def get_current_page():
     logger.info('Getting current page number')
-    paging_control = browser.find_element_by_class_name(
-        'cmp-Pagination-link cmp-Pagination-link--current')
-    current = int(paging_control.text.replace(',', ''))
+    current = browser.find_element_by_xpath(
+        "//div[@class='cmp-Pagination']/span").text
     return current
 
 
