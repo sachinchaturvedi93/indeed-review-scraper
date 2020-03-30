@@ -199,17 +199,17 @@ def extract_from_page():
 
 def more_pages():
     try:
-        browser.find_element_by_class_name(
-            'cmp-Pagination-edgeButton')
+        browser.find_element_by_xpath(
+            "//span[@class='cmp-Pagination-edgeButton']")
         return True
     except selenium.common.exceptions.NoSuchElementException:
         return False
 
 def go_to_next_page():
     logger.info(f'Going to page {page[0] + 1}')
-    next_ = browser.find_element_by_xpath(".//a[@data-tn-element='next-page']")
+    next_ = browser.find_element_by_xpath("//a[@data-tn-element='next-page']")
     browser.get(next_.get_attribute('href'))
-    time.sleep(1)
+    time.sleep(4)
     page[0] = page[0] + 1
 
 
@@ -220,17 +220,17 @@ def navigate_to_reviews():
     logger.info('Navigating to company reviews')
 
     browser.get(args.url)
-    time.sleep(1)
+    time.sleep(4)
 
     if no_reviews():
         logger.info('No reviews to scrape. Bailing!')
         return False
 
     reviews_cell = browser.find_element_by_xpath(
-        '/html/body/div[2]/div/div[1]/div[1]/header/div[2]/div[3]/div/div/div/div[3]/nav/div/ul/li[3]/a')
+        "//div[@class='cmp-NavMenu-innerContainer']/ul/li[3]/a")
     reviews_path = reviews_cell.get_attribute('href')
     browser.get(reviews_path)
-    time.sleep(1)
+    time.sleep(4)
 
     return True
 
@@ -246,8 +246,8 @@ def get_browser():
 
 def get_current_page():
     logger.info('Getting current page number')
-    current = browser.find_element_by_xpath(
-        "//div[@class='cmp-Pagination']/span").text
+    current = int(browser.find_element_by_xpath(
+        "//div[@class='cmp-Pagination']/span/text()"))
     return current
 
 
@@ -286,12 +286,12 @@ def main():
         browser.get(args.url)
         page[0] = get_current_page()
         logger.info(f'Starting from page {page[0]:,}.')
-        time.sleep(1)
+        time.sleep(4)
     else:
         browser.get(args.url)
         page[0] = get_current_page()
         logger.info(f'Starting from page {page[0]:,}.')
-        time.sleep(1)
+        time.sleep(4)
 
     reviews_df = extract_from_page()
     res = res.append(reviews_df)
