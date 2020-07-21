@@ -29,6 +29,9 @@ parser.add_argument('-f','--file', default='indeed_ratings.csv',
 					help='Output file.')
 parser.add_argument('--headless', action='store_true',
                     help='Run Chrome in headless mode.')
+parser.add_argument('--username', help='Email address used to sign in to GD.')
+parser.add_argument('-p', '--password', help='Password to sign in to GD.')
+parser.add_argument('-c', '--credentials', help='Credentials file')
 parser.add_argument('-l','--limit', default=25,
 					action='store', type=int, help='Max reviews to scrape')
 parser.add_argument('--start_from_url', action='store_true',
@@ -55,6 +58,24 @@ elif args.max_date and args.min_date:
         'Invalid argument combination:\
         Both min_date and max_date specified.'
     )
+
+if args.credentials:
+    with open(args.credentials) as f:
+        d = json.loads(f.read())
+        args.username = d['username']
+        args.password = d['password']
+else:
+    try:
+        with open('secret.json') as f:
+            d = json.loads(f.read())
+            args.username = d['username']
+            args.password = d['password']
+    except FileNotFoundError:
+        msg = 'Please provide Glassdoor credentials.\
+        Credentials can be provided as a secret.json file in the working\
+        directory, or passed at the command line using the --username and\
+        --password flags.'
+        raise Exception(msg)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -223,8 +244,8 @@ def extract_from_page():
 
 def more_pages():
     try:
-        browser.find_element_by_xpath(
-            "//span[@class='cmp-Pagination-edgeButton']")
+        next_ = browser.find_element_by_xpath(
+            ".//a[@data-tn-element='next-page']")
         return True
     except selenium.common.exceptions.NoSuchElementException:
         return False
@@ -233,7 +254,7 @@ def go_to_next_page():
     logger.info(f'Going to page {page[0] + 1}')
     next_ = browser.find_element_by_xpath(".//a[@data-tn-element='next-page']")
     browser.get(next_.get_attribute('href'))
-    time.sleep(4)
+    time.sleep(1)
     page[0] = page[0] + 1
 
 
