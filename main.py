@@ -11,6 +11,11 @@ from schema import SCHEMA
 import json
 import urllib
 import datetime as dt
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+import math
 
 start = time.time()
 
@@ -98,35 +103,54 @@ def scrape(field, review, author):
             res = np.nan
         return res
 
-    def _scrape_subrating(i):
-        try:
-            ratings = review.find_element_by_class_name(
-                'cmp-Review-rating')
-            subratings = ratings.find_element_by_class_name(
-                'cmp-ReviewRating').find_element_by_class_name('cmp-ReviewRating-popup')
-            this_one = subratings.find_elements_by_class_name(
-                'cmp-SubRating')[i]
-            x = this_one.find_element_by_class_name('cmp-RatingStars-starsUnfilled').find_element_by_class_name(
-                'cmp-RatingStars-starsFilled').get_attribute('style')
-            res = (int(x[x.find(":")+1:x.find("p")]))*0.05
-        except Exception:
-            res = np.nan
-        return res
-    
+
     def scrape_work_life_balance(review):
-        return _scrape_subrating(0)
+        element = review.find_element_by_class_name("cmp-ReviewRating")
+        ActionChains(browser).move_to_element(element).perform()
+        x = element.find_element_by_xpath(".//div[text()='Job Work/Life Balance']/preceding-sibling::div/div/div")            
+        x = x.get_attribute('style')
+        res = math.floor((int(x[x.find(":")+1:x.find("p")]))*0.0793650793650794)
+        return res
 
     def scrape_comp_and_benefits(review):
-        return _scrape_subrating(1)
+        element = review.find_element_by_class_name("cmp-ReviewRating")
+        ActionChains(browser).move_to_element(element).perform()
+        x = element.find_element_by_xpath(
+            ".//div[text()='Compensation/Benefits']/preceding-sibling::div/div/div")
+        x = x.get_attribute('style')
+        res = math.floor(
+            (int(x[x.find(":")+1:x.find("p")]))*0.0793650793650794)
+        return res
 
     def scrape_job_security(review):
-        return _scrape_subrating(2)
+        element = review.find_element_by_class_name("cmp-ReviewRating")
+        ActionChains(browser).move_to_element(element).perform()
+        x = element.find_element_by_xpath(
+            ".//div[text()='Job Security/Advancement']/preceding-sibling::div/div/div")
+        x = x.get_attribute('style')
+        res = math.floor(
+            (int(x[x.find(":")+1:x.find("p")]))*0.0793650793650794)
+        return res
 
     def scrape_senior_management(review):
-        return _scrape_subrating(3)
+        element = review.find_element_by_class_name("cmp-ReviewRating")
+        ActionChains(browser).move_to_element(element).perform()
+        x = element.find_element_by_xpath(
+            ".//div[text()='Management']/preceding-sibling::div/div/div")
+        x = x.get_attribute('style')
+        res = math.floor(
+            (int(x[x.find(":")+1:x.find("p")]))*0.0793650793650794)
+        return res
 
     def scrape_culture_and_values(review):
-        return _scrape_subrating(4)
+        element = review.find_element_by_class_name("cmp-ReviewRating")
+        ActionChains(browser).move_to_element(element).perform()
+        x = element.find_element_by_xpath(
+            ".//div[text()='Job Culture']/preceding-sibling::div/div/div")
+        x = x.get_attribute('style')
+        res = math.floor(
+            (int(x[x.find(":")+1:x.find("p")]))*0.0793650793650794)
+        return res
 
     funcs = [
         scrape_date,
@@ -151,7 +175,7 @@ def extract_from_page():
 
     def is_featured(review):
         try:
-            review.find_element_by_class_name('cmp-review-featured-container')
+            review.find_element_by_class_name('cmp-Review.is-highlighted')
             return True
         except selenium.common.exceptions.NoSuchElementException:
             return False
@@ -170,7 +194,7 @@ def extract_from_page():
 
     res = pd.DataFrame([], columns=SCHEMA)
 
-    reviews = browser.find_elements_by_class_name('cmp-Review-container')
+    reviews = browser.find_elements_by_class_name('cmp-Review')
 
     if(len(reviews) == 0):
         logger.info('No more Review!')
@@ -207,7 +231,7 @@ def more_pages():
 
 def go_to_next_page():
     logger.info(f'Going to page {page[0] + 1}')
-    next_ = browser.find_element_by_xpath("//a[@data-tn-element='next-page']")
+    next_ = browser.find_element_by_xpath(".//a[@data-tn-element='next-page']")
     browser.get(next_.get_attribute('href'))
     time.sleep(4)
     page[0] = page[0] + 1
@@ -215,24 +239,6 @@ def go_to_next_page():
 
 def no_reviews():
     return False
-
-def navigate_to_reviews():
-    logger.info('Navigating to company reviews')
-
-    browser.get(args.url)
-    time.sleep(4)
-
-    if no_reviews():
-        logger.info('No reviews to scrape. Bailing!')
-        return False
-
-    reviews_cell = browser.find_element_by_xpath(
-        "//div[@class='cmp-NavMenu-innerContainer']/ul/li[3]/a")
-    reviews_path = reviews_cell.get_attribute('href')
-    browser.get(reviews_path)
-    time.sleep(4)
-
-    return True
 
 def get_browser():
     logger.info('Configuring browser')
@@ -246,9 +252,8 @@ def get_browser():
 
 def get_current_page():
     logger.info('Getting current page number')
-    current = int(browser.find_element_by_xpath(
-        "//div[@class='cmp-Pagination']/span/text()"))
-    return current
+    #current = int(browser.find_element_by_class_name('cmp-Pagination').find_element_by_class_name('cmp-Pagination-currentButton').text)
+    return 1
 
 
 def verify_date_sorting():
@@ -277,11 +282,8 @@ def main():
     res = pd.DataFrame([], columns=SCHEMA)
 
 
-    if not args.start_from_url:
-        reviews_exist = navigate_to_reviews()
-        if not reviews_exist:
-            return
-    elif args.max_date or args.min_date:
+
+    if args.max_date or args.min_date:
         verify_date_sorting()
         browser.get(args.url)
         page[0] = get_current_page()
