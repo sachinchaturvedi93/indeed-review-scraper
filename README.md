@@ -1,6 +1,3 @@
-# Citation
-This is based on [MatthewChatham's Glassdoor Review Scraper](https://github.com/MatthewChatham/glassdoor-review-scraper)
-
 # Installation
 First, make sure that you're using Python 3.
 
